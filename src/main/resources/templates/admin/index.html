@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org" xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+<head>
+    <title>Spring Security Example</title>
+</head>
+<body>
+<h1>Welcome to Index PAGE!</h1>
+<div th:each="user : ${users}">
+    <a th:href="@{/admin/{id}(id=${user.id})}"
+       th:text="${user.getName() + ', ' + user.getAge()}">user</a>
+</div>
+<br/>
+<form th:action="@{/admin/new}" th:method="get">
+    <input type="submit" value="New User">
+</form>
+<br/>
+<form th:action="@{/logout}" th:method="POST">
+    <input type="submit" value="Logout">
+</form>
+
+</body>
+</html>
