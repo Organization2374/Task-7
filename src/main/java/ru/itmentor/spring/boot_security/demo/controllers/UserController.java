@@ -7,6 +7,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import ru.itmentor.spring.boot_security.demo.dto.UserDTO;
 import ru.itmentor.spring.boot_security.demo.models.User;
 import ru.itmentor.spring.boot_security.demo.services.RegistrationService;
 import ru.itmentor.spring.boot_security.demo.services.UserService;
@@ -61,23 +62,20 @@ public class UserController {
 
     @GetMapping("/{id}/edit")
     public String edit(Model model, @PathVariable("id") Long id) {
-        model.addAttribute("user", userService.findById(id));
+        model.addAttribute("userDTO", userService.getUserDTOById(id));
         return "/admin/edit";
     }
 
     @PatchMapping("/{id}")
-    public String update(@ModelAttribute("user") @Valid User user, BindingResult bindingResult,
+    public String update(@ModelAttribute("userDTO") @Valid UserDTO userDTO, BindingResult bindingResult,
                          @PathVariable("id") Long id) {
-        User existingUser = userService.findById(id);
-        if (user.getPassword() == null || user.getPassword().isEmpty()) {
-            user.setPassword(existingUser.getPassword());
-        } else {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-        }
         if (bindingResult.hasErrors()) {
             return "/admin/edit";
         }
-        userService.update(id, user);
+        userService.updateUserFromDTO(id, userDTO, bindingResult);
+        if (bindingResult.hasErrors()) {
+            return "/admin/edit";
+        }
         return REDIRECT_HOME;
     }
 
