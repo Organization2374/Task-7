@@ -29,8 +29,9 @@
 
     <label>Roles:</label><br>
     <div th:each="role : ${roles}">
-        <input type="checkbox" th:field="*{roles}" th:value="${role.name}" th:text="${role.name}"> <br>
+        <input type="checkbox" th:field="*{roles}" th:value="${role.id}" th:text="${role.name}"/> <br>
     </div>
+
     <input type="submit" value="Sign up">
 </form>
 </body>
