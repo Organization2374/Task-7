@@ -7,8 +7,6 @@ import jakarta.validation.constraints.Size;
 
 public class UserDTO {
 
-    private Long id;
-
     @NotEmpty(message = "Name should not be empty")
     @Size(min = 2, max = 30, message = "Name should be between 2 and 30 characters")
     private String name;
@@ -25,14 +23,6 @@ public class UserDTO {
 
     @NotEmpty(message = "Current password should not be empty")
     private String currentPassword;
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
 
     public String getName() {
         return name;

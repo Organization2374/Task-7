@@ -27,6 +27,7 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(authorizeRequests -> authorizeRequests
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers("/user/**").hasAnyRole("ADMIN", "USER")
@@ -43,7 +44,8 @@ public class WebSecurityConfig {
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login?logout")
                 )
-                .exceptionHandling(exceptionHandling -> exceptionHandling.accessDeniedPage("/access-denied"));
+                .exceptionHandling(exceptionHandling -> exceptionHandling.accessDeniedPage("/access-denied"))
+                .httpBasic();
 
         return http.build();
     }
