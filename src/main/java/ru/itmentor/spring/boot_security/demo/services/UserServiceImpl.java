@@ -1,6 +1,7 @@
 package ru.itmentor.spring.boot_security.demo.services;
 
 import org.hibernate.Hibernate;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -9,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import ru.itmentor.spring.boot_security.demo.dto.UserDTO;
+import ru.itmentor.spring.boot_security.demo.dto.UserResponseDTO;
+import ru.itmentor.spring.boot_security.demo.exceptions.user_exceptions.UserNotFoundException;
 import ru.itmentor.spring.boot_security.demo.models.User;
 import ru.itmentor.spring.boot_security.demo.repositories.UserRepository;
 
@@ -20,11 +23,13 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final ModelMapper modelMapper;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
+    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder, ModelMapper modelMapper) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.modelMapper = modelMapper;
     }
 
     public List<User> findAll() {
@@ -32,7 +37,7 @@ public class UserServiceImpl implements UserService {
     }
 
     public User findById(Long id) {
-        return userRepository.findById(id);
+        return userRepository.findById(id).orElseThrow(UserNotFoundException::new);
     }
 
     @Transactional
@@ -59,15 +64,13 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void updateUserFromDTO(Long id, UserDTO userDTO, BindingResult bindingResult) {
-        User user = userRepository.findById(id);
+        User user = userRepository.findById(id).orElseThrow(UserNotFoundException::new);
 
         if (!passwordEncoder.matches(userDTO.getCurrentPassword(), user.getPassword())) {
             bindingResult.rejectValue("currentPassword", "", "Current password is incorrect");
             return;
         }
-        user.setName(userDTO.getName());
-        user.setAge(userDTO.getAge());
-        user.setEmail(userDTO.getEmail());
+        modelMapper.map(userDTO, user);
 
         if (userDTO.getNewPassword() != null && !userDTO.getCurrentPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(userDTO.getNewPassword()));
@@ -77,15 +80,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDTO getUserDTOById(Long id) {
-        User user = userRepository.findById(id);
-
-        UserDTO userDTO = new UserDTO();
-        userDTO.setId(user.getId());
-        userDTO.setName(user.getName());
-        userDTO.setAge(user.getAge());
-        userDTO.setEmail(user.getEmail());
-        return userDTO;
+    public UserResponseDTO getUserDTOById(Long id) {
+        User user = userRepository.findById(id).orElseThrow(UserNotFoundException::new);
+        return modelMapper.map(user, UserResponseDTO.class);
     }
 
     @Override

@@ -2,17 +2,24 @@ package ru.itmentor.spring.boot_security.demo.controllers;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import ru.itmentor.spring.boot_security.demo.dto.UserDTO;
+import ru.itmentor.spring.boot_security.demo.dto.UserResponseDTO;
+import ru.itmentor.spring.boot_security.demo.exceptions.user_exceptions.UserNotCreatedException;
+import ru.itmentor.spring.boot_security.demo.exceptions.user_exceptions.UserNotFoundException;
+import ru.itmentor.spring.boot_security.demo.exceptions.user_exceptions.UserNotUpdatedException;
 import ru.itmentor.spring.boot_security.demo.models.User;
+import ru.itmentor.spring.boot_security.demo.services.ErrorHandlingService;
 import ru.itmentor.spring.boot_security.demo.services.RegistrationService;
 import ru.itmentor.spring.boot_security.demo.services.UserService;
 import ru.itmentor.spring.boot_security.demo.util.UserValidator;
 
-@Controller
+import java.util.List;
+
+@RestController
 @RequestMapping("/admin")
 public class AdminController {
 
@@ -21,63 +28,55 @@ public class AdminController {
     private final UserService userService;
     private final UserValidator userValidator;
     private final RegistrationService registrationService;
+    private final ErrorHandlingService errorHandlingService;
 
     @Autowired
-    public AdminController(UserService userService, UserValidator userValidator, RegistrationService registrationService) {
+    public AdminController(UserService userService, UserValidator userValidator, RegistrationService registrationService, ErrorHandlingService errorHandlingService) {
         this.userService = userService;
         this.userValidator = userValidator;
         this.registrationService = registrationService;
+        this.errorHandlingService = errorHandlingService;
     }
 
     @GetMapping
-    public String index(Model model) {
-        model.addAttribute("users", userService.findAll());
-        return "/admin/index";
+    public ResponseEntity<List<User>> index() {
+        return ResponseEntity.ok().body(userService.findAll());
     }
 
     @GetMapping("/{id}")
-    public String show(@PathVariable("id") Long id, Model model) {
-        model.addAttribute("user", userService.findById(id));
-        return "/admin/show";
-    }
-
-    @GetMapping("/new")
-    public String newUser(@ModelAttribute("user") User user) {
-        return "/admin/new";
+    public ResponseEntity<UserResponseDTO> show(@PathVariable("id") Long id) {
+        UserResponseDTO responseDTO = userService.getUserDTOById(id);
+        return ResponseEntity.ok().body(responseDTO);
     }
 
     @PostMapping
-    public String create(@ModelAttribute("user") @Valid User user, BindingResult bindingResult) {
+    public ResponseEntity<User> create(@RequestBody @Valid User user, BindingResult bindingResult) {
         userValidator.validate(user, bindingResult);
         if (bindingResult.hasErrors()) {
-            return "admin/new";
+            errorHandlingService.handleError(bindingResult, new UserNotCreatedException());
         }
         registrationService.register(user);
-        return REDIRECT_HOME;
-    }
-
-    @GetMapping("/{id}/edit")
-    public String edit(Model model, @PathVariable("id") Long id) {
-        model.addAttribute("userDTO", userService.getUserDTOById(id));
-        return "/admin/edit";
+        return ResponseEntity.ok().body(user);
     }
 
     @PatchMapping("/{id}")
-    public String update(@ModelAttribute("userDTO") @Valid UserDTO userDTO, BindingResult bindingResult,
+    public ResponseEntity<UserDTO> update(@RequestBody @Valid UserDTO userDTO, BindingResult bindingResult,
                          @PathVariable("id") Long id) {
         if (bindingResult.hasErrors()) {
-            return "/admin/edit";
+            errorHandlingService.handleError(bindingResult, new UserNotFoundException());
         }
+
         userService.updateUserFromDTO(id, userDTO, bindingResult);
+
         if (bindingResult.hasErrors()) {
-            return "/admin/edit";
+            errorHandlingService.handleError(bindingResult, new UserNotUpdatedException());
         }
-        return REDIRECT_HOME;
+        return ResponseEntity.ok().body(userDTO);
     }
 
     @DeleteMapping("/{id}")
-    public String delete(@PathVariable("id") Long id) {
+    public ResponseEntity<?> delete(@PathVariable("id") Long id) {
         userService.delete(id);
-        return REDIRECT_HOME;
+        return ResponseEntity.ok().body(HttpStatus.OK);
     }
 }
